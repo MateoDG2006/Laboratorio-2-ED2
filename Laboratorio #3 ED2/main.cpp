@@ -1,152 +1,106 @@
 #include <iostream>
-#include <string>
-#include <limits>
+using namespace std;
 
-struct Nodo {
-    int info;
-    Nodo* izq;
-    Nodo* der;
-    Nodo(int v) : info(v), izq(nullptr), der(nullptr) {}
+class Node {
+public:
+    int value;
+    Node* left;
+    Node* right;
+
+    Node(int v) {
+        value = v;
+        left = nullptr;
+        right = nullptr;
+    }
 };
 
-// Función que pide al usuario dirección (izq/der) y la valida.
-// Devuelve true si la dirección escogida es izquierda, false si es derecha.
-bool pedirDireccion(const Nodo* nodoActual) {
-    std::string resp;
-    while (true) {
-        std::cout << "Nodo actual = " << nodoActual->info
-            << ". ¿Insertar a la izquierda (i) o derecha (d)? [i/d]: ";
-        if (!std::getline(std::cin, resp)) {
-            // en caso de EOF, por seguridad tratar como 'd'
-            return false;
-        }
-        if (resp == "i" || resp == "I" || resp == "izq" || resp == "IZQ" || resp == "izquierda") return true;
-        if (resp == "d" || resp == "D" || resp == "der" || resp == "DER" || resp == "derecha") return false;
-        std::cout << "Respuesta inválida. Escribe 'i' o 'd'.\n";
+// Función para imprimir el encabezado del laboratorio
+void printHeader() {
+    cout << "==============================================\n";
+    cout << "UNIVERSIDAD TECNOLÓGICA DE PANAMÁ\n";
+    cout << "Estructuras de Datos II - Laboratorio N.2\n";
+    cout << "Implementación: Algoritmo creador de un árbol binario no ordenado\n";
+    cout << "Grupo: 1IL126\n";
+    cout << "Integrantes: Mateo Del Giudice – E-8-229194\n";
+    cout << "==============================================\n";
+}
+
+// Crear árbol recursivamente
+Node* createTree() {
+    int val;
+    cout << "Ingrese el valor del nodo: ";
+    cin >> val;
+
+    Node* node = new Node(val);
+
+    char ans;
+
+    // Preguntar por hijo izquierdo
+    cout << "¿Existe hijo izquierdo de " << val << "? (s/n): ";
+    cin >> ans;
+    if (ans == 's' || ans == 'S') {
+        node->left = createTree();
     }
-}
 
-// Inserta recursivamente: pregunta dirección en cada nodo hasta encontrar espacio.
-void insertarInteractivo(Nodo* nodoActual, int valor) {
-    bool izquierda = pedirDireccion(nodoActual);
-    if (izquierda) {
-        if (nodoActual->izq == nullptr) {
-            nodoActual->izq = new Nodo(valor);
-            std::cout << "Insertado " << valor << " como hijo izquierdo de " << nodoActual->info << ".\n";
-        }
-        else {
-            // seguir bajando recursivamente por la izquierda
-            insertarInteractivo(nodoActual->izq, valor);
-        }
+    // Preguntar por hijo derecho
+    cout << "¿Existe hijo derecho de " << val << "? (s/n): ";
+    cin >> ans;
+    if (ans == 's' || ans == 'S') {
+        node->right = createTree();
     }
-    else {
-        if (nodoActual->der == nullptr) {
-            nodoActual->der = new Nodo(valor);
-            std::cout << "Insertado " << valor << " como hijo derecho de " << nodoActual->info << ".\n";
-        }
-        else {
-            // seguir bajando recursivamente por la derecha
-            insertarInteractivo(nodoActual->der, valor);
-        }
-    }
+
+    return node;
 }
 
-// Preorden: para ver la estructura (raiz, izq, der)
-void preorden(const Nodo* nodo) {
-    if (!nodo) return;
-    std::cout << nodo->info << " ";
-    preorden(nodo->izq);
-    preorden(nodo->der);
+// Contar nodos del árbol
+int countNodes(Node* node) {
+    if (node == nullptr) return 0;
+    return 1 + countNodes(node->left) + countNodes(node->right);
 }
 
-// Muestra el árbol "visual" con indentación (derecha arriba, izquierda abajo)
-void mostrarDiagrama(const Nodo* nodo, int espacio = 0, int indent = 4) {
-    if (!nodo) return;
-    // mostrar subárbol derecho primero (para que aparezca arriba)
-    mostrarDiagrama(nodo->der, espacio + indent, indent);
-    // imprimir el nodo actual con indentación
-    for (int i = 0; i < espacio; ++i) std::cout << ' ';
-    std::cout << nodo->info << "\n";
-    // mostrar subárbol izquierdo
-    mostrarDiagrama(nodo->izq, space + indent, indent); // OOPS fix below
+// Recorrido en preorden
+void preorder(Node* node) {
+    if (node == nullptr) return;
+    cout << node->value << " ";
+    preorder(node->left);
+    preorder(node->right);
 }
 
-// CORRECCIÓN: variable erronea usada en mostrarDiagrama -> usar 'espacio' no 'space'
-void mostrarDiagramaCorregido(const Nodo* nodo, int espacio = 0, int indent = 4) {
-    if (!nodo) return;
-    mostrarDiagramaCorregido(nodo->der, espacio + indent, indent);
-    for (int i = 0; i < espacio; ++i) std::cout << ' ';
-    std::cout << nodo->info << "\n";
-    mostrarDiagramaCorregido(nodo->izq, espacio + indent, indent);
-}
-
-// Liberar memoria (postorden)
-void liberar(Nodo* nodo) {
-    if (!nodo) return;
-    liberar(nodo->izq);
-    liberar(nodo->der);
-    delete nodo;
-}
-
-// Función auxiliar para leer entero de forma segura
-bool leerEntero(int& out) {
-    std::string linea;
-    if (!std::getline(std::cin, linea)) return false;
-    try {
-        size_t pos;
-        long val = std::stol(linea, &pos);
-        if (pos != linea.size()) throw std::invalid_argument("Caracteres extras");
-        out = static_cast<int>(val);
-        return true;
-    }
-    catch (...) {
-        return false;
-    }
+// Liberar memoria del árbol (postorden)
+void freeTree(Node* node) {
+    if (!node) return;
+    freeTree(node->left);
+    freeTree(node->right);
+    delete node;
 }
 
 int main() {
-    Nodo* raiz = nullptr;
-    std::cout << "=== Implementación de un árbol binario no ordenado (interactivo) ===\n";
-    std::cout << "Inserta nodos. Para terminar, escribe 'fin' cuando se pida un valor.\n";
 
-    while (true) {
-        std::cout << "\nValor del nuevo nodo (o 'fin' para terminar): ";
-        std::string linea;
-        if (!std::getline(std::cin, linea)) break;
-        if (linea == "fin" || linea == "FIN" || linea == "Fin") break;
+    char again;
 
-        // intentar convertir a entero
-        int valor;
-        try {
-            size_t pos;
-            long tmp = std::stol(linea, &pos);
-            if (pos != linea.size()) throw std::invalid_argument("Entrada inválida");
-            valor = static_cast<int>(tmp);
-        }
-        catch (...) {
-            std::cout << "Entrada no es un entero válido. Intenta de nuevo.\n";
-            continue;
-        }
+    do {
+        printHeader();
 
-        if (raiz == nullptr) {
-            raiz = new Nodo(valor);
-            std::cout << "Creada raíz con valor " << valor << ".\n";
-        }
-        else {
-            insertarInteractivo(raiz, valor);
-        }
-    }
+        cout << "\nComenzando la creación del árbol...\n";
+        Node* root = createTree();
 
-    std::cout << "\n--- Árbol (preorden) ---\n";
-    preorden(raiz);
-    std::cout << "\n\n--- Diagrama del árbol ---\n";
-    if (raiz) mostrarDiagramaCorregido(raiz);
-    else std::cout << "(árbol vacío)\n";
+        cout << "\nÁrbol creado exitosamente.\n";
 
-    // liberar memoria
-    liberar(raiz);
-    raiz = nullptr;
+        cout << "Recorrido en preorden: ";
+        preorder(root);
 
-    std::cout << "\nPrograma finalizado. Memoria liberada.\n";
+        int total = countNodes(root);
+        cout << "\nTotal de nodos en el árbol: " << total << "\n";
+
+        // Liberar memoria del árbol antes de repetir
+        freeTree(root);
+
+        cout << "\n¿Desea crear otro árbol? (s/n): ";
+        cin >> again;
+
+    } while (again == 's' || again == 'S');
+
+    cout << "\nPrograma finalizado. Hasta luego.\n";
+
     return 0;
 }
